@@ -12,7 +12,7 @@ The flagship flow. User asks about a niche; the assistant runs a one-shot Conten
 
 ```bash
 curl -X POST "https://api.virlo.ai/v1/agents" \
-  -H "Authorization: Bearer {api_key}" \
+  -H "Authorization: Bearer ${VIRLO_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{
     "is_recurring": false,
@@ -32,23 +32,23 @@ Response includes an agent `id`. Tell the user:
 Poll `GET /v1/agents/:id` every ~60s (or subscribe to `content_research_agent.run.completed`). Don't block the user — this is where Vellum's always-on model shines.
 
 ```bash
-curl "https://api.virlo.ai/v1/agents/{id}" -H "Authorization: Bearer {api_key}"
+curl "https://api.virlo.ai/v1/agents/{id}" -H "Authorization: Bearer ${VIRLO_API_KEY}"
 ```
 
 ### 3. Read the results (all free)
 
 ```bash
 # AI analysis: themes, viral tactics, timing, top_10_breakdown
-curl "https://api.virlo.ai/v1/agents/{id}/analysis/latest" -H "Authorization: Bearer {api_key}"
+curl "https://api.virlo.ai/v1/agents/{id}/analysis/latest" -H "Authorization: Bearer ${VIRLO_API_KEY}"
 
 # Detected trends with lifecycle status + evidence videos
-curl "https://api.virlo.ai/v1/agents/{id}/trends/latest" -H "Authorization: Bearer {api_key}"
+curl "https://api.virlo.ai/v1/agents/{id}/trends/latest" -H "Authorization: Bearer ${VIRLO_API_KEY}"
 
 # The videos — re-rank these by weighted score before presenting
-curl "https://api.virlo.ai/v1/agents/{id}/videos?order_by=views&sort=desc&limit=25" -H "Authorization: Bearer {api_key}"
+curl "https://api.virlo.ai/v1/agents/{id}/videos?order_by=views&sort=desc&limit=25" -H "Authorization: Bearer ${VIRLO_API_KEY}"
 
 # Rising creators outperforming their follower count
-curl "https://api.virlo.ai/v1/agents/{id}/creators/outliers?order_by=weighted_score&limit=10" -H "Authorization: Bearer {api_key}"
+curl "https://api.virlo.ai/v1/agents/{id}/creators/outliers?order_by=weighted_score&limit=10" -H "Authorization: Bearer ${VIRLO_API_KEY}"
 ```
 
 ### 4. Present, ranked by weighted virality score

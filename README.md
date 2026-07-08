@@ -13,7 +13,7 @@ Every integration in this repo follows the same rules, so partners can ship one 
 - **Tiering lives in Virlo, not the plugin.** Free vs. paid gating, credits, and rate limits are all enforced server-side by the Virlo API. The plugin is a thin, dumb client — it just calls the API and renders results.
 - **Bring-your-own credentials.** Users create a Virlo account and connect their own Virlo API key (or OAuth). No shared keys, no proxying.
 - **One contract, many hosts.** The tool names, schemas, and skill prose are a public contract. We version them here and keep them in sync with the [hosted MCP server](https://dev.virlo.ai).
-- **Async-first.** Deep research (Content Research Agent runs) takes ~15–20 minutes. Integrations poll on `finalized: true` or subscribe to `*.run.completed` webhooks rather than blocking.
+- **Async-first.** Deep research (Content Research Agent runs) takes ~15-20 minutes. Integrations poll on `finalized: true` or subscribe to `*.run.completed` webhooks rather than blocking.
 
 ## Integrations
 
@@ -27,18 +27,21 @@ More partner integrations will be added as sibling folders under `integrations/`
 
 ```
 virlo-integrations/
-├── README.md                 ← you are here
-├── LICENSE                   ← MIT
+├── README.md                 this file
+├── LICENSE                   MIT
 └── integrations/
-    └── vellum/               ← Vellum assistant plugin
-        ├── README.md         ← install + setup for this integration
-        ├── SKILL.md          ← the assistant "brain" (how to use Virlo well)
-        ├── agent-playbook.md ← how to interpret Virlo results
-        ├── manifest.json     ← plugin manifest (config schema, entry points)
-        ├── marketplace.json  ← the reference entry Vellum lists in their marketplace repo
-        ├── mcp.json          ← MCP server connection config
-        ├── prompts/          ← golden prompts the plugin must handle well
-        └── examples/         ← worked end-to-end flows
+    └── vellum/               Vellum assistant plugin
+        ├── package.json      plugin manifest (name, version, peerDependencies)
+        ├── README.md         install + setup for this integration
+        ├── hooks/
+        │   ├── init.ts       validates API key, sets VIRLO_API_KEY env var
+        │   └── shutdown.ts   cleans up env var on teardown
+        └── skills/
+            └── virlo/
+                ├── SKILL.md          the assistant skill (how to use Virlo's API)
+                ├── agent-playbook.md how to interpret Virlo results
+                ├── prompts/          golden prompts (QA acceptance criteria)
+                └── examples/         worked end-to-end flows
 ```
 
 ## Contributing a new integration
@@ -56,4 +59,4 @@ virlo-integrations/
 
 ## License
 
-MIT © Virlo
+MIT (c) Virlo
