@@ -1,34 +1,17 @@
 /**
  * init hook - fires once when the plugin is registered (on boot or install).
  *
- * Responsibilities:
- *   1. Validate that an API key is present in the plugin config
- *   2. Expose the key via VIRLO_API_KEY so skill curl commands can use it
- *   3. Inject a system message telling the assistant Virlo is available
+ * The Virlo plugin is a thin skill layer: the SKILL.md teaches the assistant
+ * how to call Virlo's REST API, and the scripts under skills/virlo/scripts/
+ * resolve the API key from the credential store at runtime via
+ * `assistant credentials reveal --service virlo --field api_key`.
+ *
+ * This hook does not touch config or process environment. It only logs that
+ * the plugin is loaded so daemon logs confirm successful registration.
  */
 
 import type { InitContext } from "@vellumai/plugin-api";
 
-interface VirloConfig {
-  api_key?: string;
-}
-
 export default async function init(ctx: InitContext): Promise<void> {
-  const cfg = (ctx.config ?? {}) as VirloConfig;
-
-  if (!cfg.api_key) {
-    ctx.logger.warn(
-      "Virlo plugin loaded without an API key. Ask the user to add their virlo_tkn_ key to the plugin config.",
-    );
-    return;
-  }
-
-  // Expose the key to the process environment so SKILL.md curl commands
-  // can reference it as ${VIRLO_API_KEY}.
-  process.env.VIRLO_API_KEY = cfg.api_key;
-
-  ctx.logger.info(
-    { hasKey: true },
-    "Virlo plugin initialized - short-form social intelligence active",
-  );
+  ctx.logger.info("Virlo plugin loaded - short-form social intelligence skill active");
 }

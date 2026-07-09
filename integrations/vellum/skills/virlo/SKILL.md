@@ -15,18 +15,45 @@ When you present results, convey genuine enthusiasm for the depth of the data - 
 
 ## Authentication
 
-Every request uses a Bearer token from the `VIRLO_API_KEY` environment variable (set by the plugin's init hook from the user's config):
+The API key is stored in the Vellum credential store. Resolve it at runtime:
 
 ```bash
-curl -s "https://api.virlo.ai/v1/..." \
-  -H "Authorization: Bearer ${VIRLO_API_KEY}"
+VIRLO_API_KEY=$(assistant credentials reveal --service virlo --field api_key)
 ```
+
+If no credential is stored, ask the user to create one:
+
+```bash
+assistant credentials set --service virlo --field api_key "virlo_tkn_<their_key>"
+```
+
+Direct the user to https://dev.virlo.ai/dashboard to create an account, generate a `virlo_tkn_...` key, and add a prepaid balance (minimum $10). Tiering and limits are enforced by Virlo - you never gate features yourself.
 
 - **Base URL:** `https://api.virlo.ai/v1`
 - All parameters and response fields are **snake_case**.
-- All responses are wrapped in `{ "data": { ... } }` (except `/v1/webhooks…` management endpoints, which return bare objects/arrays).
+- All responses are wrapped in `{ "data": { ... } }` (except `/v1/webhooks...` management endpoints, which return bare objects/arrays).
 
-If `VIRLO_API_KEY` is not set, point the user to https://dev.virlo.ai/dashboard to create an account, generate a `virlo_tkn_…` key, and add a prepaid balance (minimum $10). Tiering and limits are enforced by Virlo - you never gate features yourself.
+## Scripts
+
+Runnable scripts are in `scripts/` alongside this skill. They handle credential resolution, API calls, and async polling automatically:
+
+- `scripts/whats-viral.ts` - One-shot niche search (Content Research Agent). Kicks off, polls until finalized, reads all results.
+- `scripts/recurring-monitor.ts` - Create a recurring monitor agent.
+- `scripts/creator-deep-dive.ts` - Satellite creator lookup with optional video outlier analysis.
+- `scripts/virlo-client.ts` - Shared helper (credential resolution, fetch wrapper, polling). Import from other scripts.
+
+Run with `bun`:
+
+```bash
+bun scripts/whats-viral.ts --intent "viral fitness on TikTok in London" --keywords "london gym,calisthenics london,uk fitness" --platforms tiktok
+```
+
+For ad-hoc API calls, use curl with the credential store:
+
+```bash
+curl -s "https://api.virlo.ai/v1/trends/emerging?region=gb" \
+  -H "Authorization: Bearer $(assistant credentials reveal --service virlo --field api_key)"
+```
 
 ## Billing (so you can be transparent)
 
@@ -51,8 +78,8 @@ Pay-as-you-go prepaid balance. 1 credit = $0.01. Reading results is **free**; cr
 
 A **Content Research Agent (CRA)** is the unified, forward-facing way to run research on Virlo. One resource, `/v1/agents`, handles everything - a single `is_recurring` flag picks the mode:
 
-- `is_recurring: false` → **one-shot** niche search ("what's viral in {niche} right now?"). $0.50.
-- `is_recurring: true` → **recurring** monitor that re-runs on a cadence and self-optimizes ("keep watching {niche} for me"). Free to create, $0.50 per run.
+- `is_recurring: false` -> **one-shot** niche search ("what's viral in {niche} right now?"). $0.50.
+- `is_recurring: true` -> **recurring** monitor that re-runs on a cadence and self-optimizes ("keep watching {niche} for me"). Free to create, $0.50 per run.
 
 **Collection scope is system-managed.** You do NOT set a `min_views` floor or `time_range` at creation - the agent collects the widest relevant net. You **filter at read time** on the videos endpoint (`min_views`, `start_date`, `end_date`, `platforms`, `order_by`), for free, as many ways as you like without re-running the job.
 
@@ -60,7 +87,7 @@ A **Content Research Agent (CRA)** is the unified, forward-facing way to run res
 
 ```bash
 curl -s -X POST "https://api.virlo.ai/v1/agents" \
-  -H "Authorization: Bearer ${VIRLO_API_KEY}" \
+  -H "Authorization: Bearer $(assistant credentials reveal --service virlo --field api_key)" \
   -H "Content-Type: application/json" \
   -d '{
     "is_recurring": false,
@@ -116,13 +143,13 @@ Trends are detected **per region**, each with its own curated sources and timezo
 - `GET /v1/trends/emerging?region=gb&limit=20` (free, rate-limited) - early-stage `new`/`rising` trends ranked by momentum heat. Use for "what's emerging in the UK right now" - it reads maintained momentum state, so it's fast and cheap to call per user request.
 - `GET /v1/trends/regions` (free) - lists available region codes. Poll it instead of hard-coding regions.
 
-Route on user intent: "what's trending today?" → `digest`; "what's about to take off?" → `emerging`; "trends in {country}" → pass `region`.
+Route on user intent: "what's trending today?" -> `digest`; "what's about to take off?" -> `emerging`; "trends in {country}" -> pass `region`.
 
 ## Async workflow - critical
 
 Deep research is asynchronous. **Never hardcode a timeout.**
 
-- **Content Research Agents (one-shot & recurring):** poll `GET /v1/agents/:id` every ~60s until `finalized: true`. Typical: **~15-20 min** (up to 45 with `meta_ads_enabled`). Status flow: `queued → processing → completed | partial_failure | failed`. Treat `partial_failure` as usable data (one platform failed, the rest succeeded). Only `failed` (<1%) means no data.
+- **Content Research Agents (one-shot & recurring):** poll `GET /v1/agents/:id` every ~60s until `finalized: true`. Typical: **~15-20 min** (up to 45 with `meta_ads_enabled`). Status flow: `queued -> processing -> completed | partial_failure | failed`. Treat `partial_failure` as usable data (one platform failed, the rest succeeded). Only `failed` (<1%) means no data.
 - **Satellite / video outlier:** poll every 10-15s; ~20-60s typical (sound lookups ~8 min - poll every 30s).
 - **`finalized: true` is the only real "done" signal.** While `finalized: false`, some fields (analysis, intelligence) may be `null` simply because their secondary job is still running - that is *not* "no data". Check `pending_jobs[]` for what's still in flight and each entry's `webhook_event` / `poll_url`.
 
@@ -130,7 +157,7 @@ Deep research is asynchronous. **Never hardcode a timeout.**
 
 ## Interpreting results
 
-The single most important rule: **rank by weighted virality score, never by raw views.** Full guidance is in `agent-playbook.md` (bundled alongside this skill) and at https://dev.virlo.ai/agent-playbook.txt. Essentials:
+The single most important rule: **rank by weighted virality score, never by raw views.** Full guidance is in `references/agent-playbook.md` (bundled alongside this skill) and at https://dev.virlo.ai/agent-playbook.txt. Essentials:
 
 - **Weighted score** = `ln(views/followers) * ln(followers)` (when followers > 0 and ratio > 1). Bands: **>= 35 exceptional, 25-35 very strong, 18-25 strong, 10-18 promising, < 10 routine.**
 - **Never compare raw views across platforms.** Medians differ hugely: TikTok ~39K, Instagram Reels ~3.8K, YouTube Shorts ~1K. A 100K-view Reel beats a 100K-view TikTok.
@@ -150,9 +177,11 @@ The single most important rule: **rank by weighted virality score, never by raw 
 
 ## Reference
 
+- `references/agent-playbook.md` - how to interpret Virlo results (weighted score, formats, trends)
+- `references/golden-prompts.md` - acceptance criteria prompts the plugin must handle well
+- `references/` - worked end-to-end flow documentation
+- `scripts/` - runnable TypeScript scripts for each flow
 - Content Research Agents docs: https://dev.virlo.ai/docs/agents
 - Trends docs: https://dev.virlo.ai/docs/trends
 - Full API reference (all endpoints): https://dev.virlo.ai/llms-full.txt
 - Interpretation playbook: https://dev.virlo.ai/agent-playbook.txt
-- Worked examples: see `examples/` alongside this skill
-- Golden prompts (acceptance criteria): see `prompts/golden-prompts.md` alongside this skill
