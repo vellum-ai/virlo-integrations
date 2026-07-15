@@ -128,7 +128,7 @@ Subscribe to **`content_research_agent.run.completed`** (carries `is_recurring`)
 
 ## Satellite - creator, sound & video deep-dives
 
-- **Creator lookup** - `GET /v1/satellite/creator/:platform/:username?include=videos,outliers&cross_links=true&max_videos=50` ($0.50). Replace `:username` with a real creator handle (e.g. `neenib`). Add `&trend_analysis=true` (+$0.50) for LLM trend detection over the creator's body of work. `cross_links=true` finds the same creator on other platforms.
+- **Creator lookup** - `GET /v1/satellite/creator/:platform/:username?include=videos,outliers&cross_links=true&max_videos=50` ($0.50). Replace `:username` with a real creator handle. Add `&trend_analysis=true` (+$0.50) for LLM trend detection over the creator's body of work. `cross_links=true` finds the same creator on other platforms.
 - **Sound lookup** - `GET /v1/satellite/sounds/:platform/:music_id` ($0.50; `tiktok` or `instagram` only). Add `&trend_analysis=true` (+$0.50) for a ~300-video deep-dive with when/whether-it-resurged analysis.
 - **Video outlier** - `POST /v1/satellite/video-outlier` with `{ "url": "...", "platform": "tiktok" }` ($0.50): how a specific video performs vs. the creator's baseline.
 
