@@ -2,6 +2,26 @@
 
 The official [Virlo](https://virlo.ai) plugin for [Vellum](https://www.vellum.ai/) assistants. Gives your always-on personal AI real-time short-form social intelligence: ask *"what's going viral in my niche right now, and why?"* and get back Virlo's weighted virality score, rising-creator outliers, winning content formats, and AI trend analysis across TikTok, YouTube Shorts, and Instagram Reels.
 
+## Quick start
+
+```bash
+# 1. Hatch a Vellum assistant
+vellum hatch --name my-assistant --remote docker -d
+
+# 2. Store your Virlo API key (get one at https://dev.virlo.ai/dashboard)
+vellum exec my-assistant -- assistant credentials set "virlo_tkn_<your_key>" \
+  --service virlo --field api_key
+
+# 3. Install the Virlo plugin (triggers the init hook)
+vellum exec my-assistant -- assistant plugins install \
+  https://github.com/vellum-ai/virlo-integrations/tree/main/integrations/vellum --name virlo
+
+# 4. Start a conversation
+vellum message my-assistant "what's going viral in fitness on TikTok right now?"
+```
+
+The assistant will resolve the API key from the credential store at runtime, kick off a Content Research Agent (~15-20 min), and surface results when ready. It never blocks you synchronously.
+
 ## What it does
 
 Built on Virlo's forward-facing surfaces:

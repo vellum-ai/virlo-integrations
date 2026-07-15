@@ -57,7 +57,7 @@ curl -s "https://api.virlo.ai/v1/trends/emerging?region=gb" \
 
 ## Billing (so you can be transparent)
 
-Pay-as-you-go prepaid balance. 1 credit = $0.01. Reading results is **free**; creating research costs credits. Every response carries `X-Balance-Remaining`.
+Pay-as-you-go prepaid balance. 1 credit = $0.01. Reading results is **free**; creating research costs credits. Every response carries `x-cost` (dollars charged) and `x-credits-used` (credits consumed) headers.
 
 | Action | Cost |
 | --- | --- |
@@ -71,7 +71,7 @@ Pay-as-you-go prepaid balance. 1 credit = $0.01. Reading results is **free**; cr
 | Emerging trends | Free (rate-limited per plan) |
 | Retrieving any agent results (videos, outliers, analysis, trends, sounds) | Free |
 
-- When `X-Balance-Remaining` drops below **$10.00**, tell the user: *"Heads up - your Virlo balance is getting low. Add funds at https://dev.virlo.ai/dashboard/billing."*
+- When `x-credits-used` is high relative to the user's prepaid balance, tell the user: *"Heads up - your Virlo balance is getting low. Add funds at https://dev.virlo.ai/dashboard/billing."*
 - On a **402** response, balance is insufficient: *"Your Virlo balance is too low for this. Add funds or enable auto top-up at https://dev.virlo.ai/dashboard/billing."*
 
 ## Content Research Agents - the primary engine
@@ -128,7 +128,7 @@ Subscribe to **`content_research_agent.run.completed`** (carries `is_recurring`)
 
 ## Satellite - creator, sound & video deep-dives
 
-- **Creator lookup** - `GET /v1/satellite/creator/:platform/:username?include=videos,outliers&cross_links=true&max_videos=50` ($0.50). Add `&trend_analysis=true` (+$0.50) for LLM trend detection over the creator's body of work. `cross_links=true` finds the same creator on other platforms.
+- **Creator lookup** - `GET /v1/satellite/creator/:platform/:username?include=videos,outliers&cross_links=true&max_videos=50` ($0.50). Replace `:username` with a real creator handle. Add `&trend_analysis=true` (+$0.50) for LLM trend detection over the creator's body of work. `cross_links=true` finds the same creator on other platforms.
 - **Sound lookup** - `GET /v1/satellite/sounds/:platform/:music_id` ($0.50; `tiktok` or `instagram` only). Add `&trend_analysis=true` (+$0.50) for a ~300-video deep-dive with when/whether-it-resurged analysis.
 - **Video outlier** - `POST /v1/satellite/video-outlier` with `{ "url": "...", "platform": "tiktok" }` ($0.50): how a specific video performs vs. the creator's baseline.
 
