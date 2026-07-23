@@ -7,20 +7,18 @@
  * and sounds in a single JSON payload. All Virlo result endpoints are free
  * reads (no credit cost), so this route is safe to call repeatedly.
  *
- * The API key is resolved from the Vellum credential store at request time
- * via `assistant credentials reveal`, same as the plugin's scripts.
+ * The API key is resolved from the Vellum credential store at request time via
+ * the plugin API's async `resolveCredential` — never a blocking `execSync`,
+ * which would stall the assistant's event loop while the shell-out runs.
  */
 
-import { execSync } from "node:child_process";
+import { resolveCredential } from "@vellumai/plugin-api";
 
 const BASE_URL = "https://api.virlo.ai/v1";
 
-function getApiKey(): string {
+async function getApiKey(): Promise<string> {
   try {
-    const key = execSync(
-      "assistant credentials reveal --service virlo --field api_key",
-      { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] },
-    ).trim();
+    const key = (await resolveCredential("virlo/api_key")).trim();
     if (!key) throw new Error("empty credential");
     return key;
   } catch {
@@ -77,7 +75,7 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   try {
-    const apiKey = getApiKey();
+    const apiKey = await getApiKey();
 
     const [agentMeta, videosRaw, outliersRaw, hashtagsRaw, soundsRaw] =
       await Promise.all([

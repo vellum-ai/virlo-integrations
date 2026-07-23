@@ -7,20 +7,18 @@
  * Content Research Agents, so the user can click one instead of pasting a UUID.
  * Listing agents is a free read.
  *
- * The API key is resolved from the Vellum credential store at request time
- * via `assistant credentials reveal`, same as the plugin's scripts.
+ * The API key is resolved from the Vellum credential store at request time via
+ * the plugin API's async `resolveCredential` — never a blocking `execSync`,
+ * which would stall the assistant's event loop while the shell-out runs.
  */
 
-import { execSync } from "node:child_process";
+import { resolveCredential } from "@vellumai/plugin-api";
 
 const BASE_URL = "https://api.virlo.ai/v1";
 
-function getApiKey(): string {
+async function getApiKey(): Promise<string> {
   try {
-    const key = execSync(
-      "assistant credentials reveal --service virlo --field api_key",
-      { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] },
-    ).trim();
+    const key = (await resolveCredential("virlo/api_key")).trim();
     if (!key) throw new Error("empty credential");
     return key;
   } catch {
@@ -70,7 +68,7 @@ export async function GET(request: Request): Promise<Response> {
   const limit = url.searchParams.get("limit") || "50";
 
   try {
-    const apiKey = getApiKey();
+    const apiKey = await getApiKey();
     const raw = await virloFetch(`/agents?limit=${encodeURIComponent(limit)}`, apiKey);
     return Response.json({ agents: extractList(raw, "agents", "items") });
   } catch (err) {
